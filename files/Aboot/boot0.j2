@@ -480,6 +480,14 @@ read_system_eeprom() {
     read_eeprom /tmp/.system-prefdl
 }
 
+maybe_read_switch_eeprom() {
+    if [ -f /tmp/.switch-prefdl ]; then
+        read_switch_eeprom
+    else
+        read_system_eeprom
+    fi
+}
+
 get_eeprom_value() {
     local key="$1"
     sed -n "s#^$key: *##p" "$target_path/.system-prefdl" || :
@@ -750,11 +758,7 @@ write_platform_specific_cmdline() {
     fi
     if in_array "$platform" "shearwater" "redstart"; then
         cmdline_add modprobe.blacklist=snd_hda_intel,hdaudio,amd_sfh
-        if [ -f /tmp/.switch-prefdl ]; then
-            read_switch_eeprom
-        else
-            read_system_eeprom
-        fi
+        maybe_read_switch_eeprom
     fi
     if in_array "$sid" "Moby" "RedstartFixed8CNMoby"; then
         aboot_machine=arista_7060x6_16pe_384c_b
@@ -766,11 +770,7 @@ write_platform_specific_cmdline() {
         fi
     fi
     if in_array "$platform" "marconi"; then
-        if [ -f /tmp/.switch-prefdl ]; then
-            read_switch_eeprom
-        else
-            read_system_eeprom
-        fi
+        maybe_read_switch_eeprom
     fi
 
     if [ $varlog_size -eq 0 ]; then
