@@ -486,20 +486,17 @@ get_eeprom_value() {
 }
 
 write_kdump_cmdline() {
-    local sid="$(cmdline_get sid | sed 's/Ssd$//')"
-    case "$sid" in
-        OtterLake*)
-            if ! cmdline_has crashkernel; then
+    if ! $kdump_disable && ! cmdline_has crashkernel; then
+        local sid="$(cmdline_get sid | sed 's/Ssd$//')"
+        case "$sid" in
+            OtterLake*)
                 cmdline_add crashkernel=1G,high
-            fi
-            ;;
-        Lodoga*|*Quicksilver*|*Moby|Shearwater*|Moranda*|Gardena*|PikeIsland*|\
-        Wolverine*|Clearwater2*|QuartzDd*|Redstart8Mk2*Quartz4*|Redstart8Mk2*CitrineDd*)
-            if ! cmdline_has crashkernel; then
+                ;;
+            *)
                 cmdline_add crashkernel=0M-2G:256M,2G-4G:320M,4G-8G:384M,8G-16G:448M,16G-32G:768M,32G-:1G
-            fi
-            ;;
-    esac
+                ;;
+        esac
+    fi
 }
 
 write_platform_specific_cmdline() {
@@ -507,6 +504,7 @@ write_platform_specific_cmdline() {
     local sid="$(cmdline_get sid | sed 's/Ssd$//')"
 
     local varlog_size=0
+    kdump_disable=false
 
     # sonic_mode is set to fixed by default.
     sonic_mode="fixed"
@@ -523,19 +521,23 @@ write_platform_specific_cmdline() {
         aboot_machine=arista_7050_qx32
         cmdline_add modprobe.blacklist=radeon,sp5100_tco
         cmdline_add acpi=off
+        kdump_disable=true
     fi
     if [ "$platform" = "crow" ]; then
         # Assuming sid=Clearlake
         aboot_machine=arista_7050_qx32s
         cmdline_add modprobe.blacklist=radeon,sp5100_tco
+        kdump_disable=true
     fi
     if in_array "$sid" "Upperlake" "UpperlakeES" "UpperlakeElite"; then
         aboot_machine=arista_7060_cx32s
         flash_size=3700
+        kdump_disable=true
     fi
     if [ "$sid" = "UpperlakePlus" ]; then
         aboot_machine=arista_7060cx2_32s
         flash_size=3700
+        kdump_disable=true
     fi
     if [ "$sid" = "Gardena" ] || [ "$sid" = "GardenaE" ]; then
         aboot_machine=arista_7260cx3_64
